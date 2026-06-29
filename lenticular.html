@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>光栅素材</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: system-ui;
+        }
+
+        /* 顶部栏 - 只在编辑页面显示 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #111;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        .header-title {
+            color: white;
+            font-size: 18px;
+        }
+        .header-btn {
+            font-size: 24px;
+            color: #007aff;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        /* 编辑器 */
+        #lenticularEditor {
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 56px;
+            left: 0;
+            right: 0;
+            bottom: 80px;
+        }
+        .lenticular-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+            align-content: start;
+        }
+        .lenticular-slot {
+            width: 100%;
+            height: 0;
+            padding-bottom: 177.77%;
+            background: #1a1a1a;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: #444;
+            overflow: hidden;
+            position: relative;
+            border: 2px dashed #333;
+        }
+        .lenticular-slot.filled {
+            border: none;
+        }
+        .lenticular-slot img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+        .lenticular-slot .delete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255,0,0,0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: white;
+            z-index: 2;
+        }
+
+        /* 预览容器 */
+        #lenticularPreview {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            overflow: hidden;
+        }
+        .lenticular-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 0.1s ease-out;
+        }
+
+        /* 底部按钮 - 左下角 */
+        .bottom-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            transition: opacity 0.3s ease;
+        }
+        .bottom-controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .bottom-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            font-size: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        #previewBtn {
+            width: auto;
+            padding: 0 24px;
+            border-radius: 24px;
+            font-size: 14px;
+        }
+        #backToEditorBtn {
+            display: none;
+        }
+
+        /* 锁屏按钮 - 右上角 */
+        #lockBtn {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        .preview-mode #lockBtn {
+            display: flex;
+        }
+        .preview-mode #previewBtn {
+            display: none;
+        }
+        .preview-mode #backToEditorBtn {
+            display: flex;
+        }
+        .preview-mode .header {
+            display: none;
+        }
+        .preview-mode #lenticularEditor {
+            display: none;
+        }
+
+        /* 状态提示 */
+        .status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            z-index: 200;
+            display: none;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <!-- 状态提示 -->
+    <div class="status" id="status"></div>
+
+    <!-- 顶部栏 - 编辑页面显示 -->
+    <div class="header">
+        <button class="header-btn" id="backBtn">🔙</button>
+        <div class="header-title" id="lenticularTitle">光栅素材 (0/6)</div>
+        <button class="header-btn" id="closeBtn">✕</button>
+    </div>
+
+    <!-- 编辑器 -->
+    <div id="lenticularEditor">
+        <div class="lenticular-grid" id="lenticularGrid"></div>
+    </div>
+
+    <!-- 预览容器 -->
+    <div id="lenticularPreview"></div>
+
+    <!-- 底部按钮 - 左下角 -->
+    <div class="bottom-controls" id="bottomControls">
+        <button class="bottom-btn" id="previewBtn">🎴 光栅卡！启动！</button>
+        <button class="bottom-btn" id="backToEditorBtn">🔙</button>
+    </div>
+
+    <!-- 锁屏按钮 - 右上角 -->
+    <button class="bottom-btn" id="lockBtn">🔓</button>
+
+    <script src="js/lenticular.js"></script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!--
+================================================================================
+ 电子通行证 - 1:1 物理像素交互痛机终端 (V1.0.0)
+ 
+ 真机适配平台 : 小米 4 
+ 渲染核心架构 : Proportional 物理像素对齐 GPU 硬件位移合成引擎
+ 优化技术特点 : - 50fps 硬件位移（translateX）流光，Repaint（像素重绘）降至 0
+                - 5路状态绝对互斥低功耗省电休眠机制
+                - 异步双缓冲（Double-Buffering）零闪黑切图预加载
+                - DPM 沙盒实体文件同步销毁（根治死者苏生地雷）
+ 
+ Design by R4ksh4
+================================================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>通行证设备</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="mainView">
+        <!-- 光锥效果容器 -->
+        <div id="lightCone" class="light-cone">
+            <div class="card"></div>
+            <div class="shine"></div>
+        </div>
+
+        <div id="container"></div>
+
+        <!-- 两侧切换按钮 -->
+        <div class="side-btn left-btn" id="prevBtn">&lt;</div>
+        <div class="side-btn right-btn" id="nextBtn">&gt;</div>
+
+        <!-- 底部功能按钮 -->
+        <div class="controls minimal">
+            <div class="btn-row">
+                <button id="lenticularEntryBtn" class="corner-btn" style="display:none;">🎴</button>
+                <button id="imageBtn" style="display:none;">📷</button>
+                <button id="videoBtn" style="display:none;">🎬</button>
+            </div>
+            <div class="btn-row">
+                <button id="playlistBtn" class="corner-btn left-corner">📋</button>
+                <button id="fullscreenBtn" style="display:none;">🖥️</button>
+                <button id="debugBtn" style="display:none;">🐛</button>
+                <button id="settingsBtn" class="corner-btn right-corner">⚙️</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="playlist-overlay" id="playlistView">
+        <div class="playlist-header">
+            <div class="playlist-title">播放列表</div>
+            <div class="playlist-header-right">
+                <div class="playlist-delete-all" id="playlistDeleteAllBtn">🗑️</div>
+                <div class="playlist-add" id="playlistAddBtn">➕</div>
+            </div>
+        </div>
+        <div class="playlist-items" id="playlistItems">
+            <div class="playlist-empty">暂无内容，点击右上角添加</div>
+        </div>
+        <div class="controls playlist-controls">
+            <button id="playlistBackBtn">🔙</button>
+            <button id="playlistPlayBtn" style="display:none;">▶️ 播放</button>
+        </div>
+    </div>
+
+    <div class="add-menu-overlay" id="addMenuOverlay"></div>
+
+    <div class="add-menu" id="addMenu">
+        <div class="add-menu-title">添加到播放列表</div>
+        <div class="add-menu-buttons">
+            <button id="addImageBtn">📷 图片</button>
+            <button id="addVideoBtn">🎬 视频</button>
+        </div>
+    </div>
+
+    <div class="settings-overlay" id="settingsView">
+        <div class="playlist-header">
+            <div class="playlist-title">设置</div>
+            <div class="playlist-add" id="settingsCloseBtn">✕</div>
+        </div>
+        <div class="settings-content">
+            <div class="settings-row">
+                <label>播放模式</label>
+                <select id="playModeSelect">
+                    <option value="sequential">顺序播放</option>
+                    <option value="random">随机播放</option>
+                </select>
+            </div>
+            <div class="settings-row">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="autoSwitchCheck">
+                    <span>定时切换</span>
+                </label>
+                <div class="number-input-row">
+                    <input type="number" id="autoSwitchInterval" value="5" min="1" max="60">
+                    <span>秒</span>
+                </div>
+            </div>
+            <!-- 光锥开关 -->
+            <div class="settings-row">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="lightConeCheck">
+                    <span>光锥效果（陀螺仪）</span>
+                </label>
+            </div>
+            <!-- 光锥续航版开关 -->
+            <div class="settings-row">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="lightConeLiteCheck">
+                    <span>光锥效果续航版（24Hz+静止休眠）</span>
+                </label>
+            </div>
+			
+			<div class="settings-row">
+			                <label class="checkbox-label">
+			                    <input type="checkbox" id="lightConeSuperLiteCheck">
+			                    <span>光锥效果超级续航版（PNG贴图+translateX）</span>
+			                </label>
+			            </div>
+						
+			<div class="settings-row">
+			                <label class="checkbox-label">
+			                    <input type="checkbox" id="lightConeFixedLiteCheck">
+			                    <span>固定动画续航版（PNG贴图+translateX）</span>
+			                </label>
+			            </div>
+			
+			
+			
+            <!-- 固定动画开关 -->
+            <div class="settings-row">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="lightConeFixedCheck">
+                    <span>固定动画（最省电，无陀螺仪）</span>
+                </label>
+            </div>
+			<button id="aboutBtn" style="width:100%;padding:12px;background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:16px;margin-bottom:12px;">关于电子通行证</button>
+            <button id="saveSettingsBtn" style="width:100%;padding:12px;background:#007aff;color:white;border:none;border-radius:8px;font-size:16px;">保存</button>
+        </div>
+    </div>
+
+    <div class="status" id="status">电子通行证</div>
+    <div class="lock-btn" id="lockBtn">🔓</div>
+<div class="settings-overlay" id="aboutView">
+        <div class="playlist-header">
+            <div class="playlist-title">关于电子通行证</div>
+            <div class="playlist-add" id="aboutCloseBtn">✕</div>
+        </div>
+        <div class="settings-content" style="overflow-y:auto;max-height:calc(100vh - 60px);">
+            <div class="settings-row" style="text-align:center;margin-bottom:25px;">
+                <h3 style="font-size:18px;margin-bottom:5px;">R4ksh4's Pass Device</h3>
+                <p style="color:#888;font-size:13px;">Version 1.0.0 (Design by R4ksh4)</p>
+            </div>
+            
+            <div class="settings-row" style="background:rgba(255,68,68,0.12);border:1px solid rgba(255,68,68,0.3);padding:15px;border-radius:10px;margin-bottom:20px;">
+                <div style="font-size:13px;font-weight:bold;color:#ff4444;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                    ⚠️ Keep Android Open / FreeDroidWarn
+                </div>
+                <p style="font-size:12px;line-height:1.6;color:#ddd;margin-bottom:12px;">
+                    从 2026 年底开始，谷歌将要求所有运行在认证安卓设备上的独立分发应用（包括本地侧载安装）的开发者必须进行实名身份验证并向其交出签名密钥。本应用的开发者已决定拒绝配合。这意味着未来系统可能会弹出恶意安全警告，甚至强行阻止本应用运行。
+                </p>
+                <div style="font-size:12px;font-weight:bold;color:#ff4444;text-align:center;background:rgba(255,68,68,0.1);padding:8px;border-radius:6px;border:1px dashed rgba(255,68,68,0.3);cursor:pointer;" id="keepAndroidOpenCountdown" onclick="plus.runtime.openURL('https://keepandroidopen.org')">
+                    Android is locking down...
+                </div>
+            </div>
+            
+            <div class="settings-row" style="font-size:12px;line-height:1.6;color:#888;text-align:center;">
+                <p style="margin-bottom:10px;">本项目是一个致力于在旧安卓设备上通过极致的前端优化榨干硬件性能的开源通行证展示程序。</p>
+                <p>支持开源，拒绝商业垄断。详情请点击下方链接访问：</p>
+                <p style="margin-top:10px;">
+                    <span style="color:#007aff;text-decoration:underline;cursor:pointer;font-weight:bold;display:inline-block;padding:5px;" onclick="plus.runtime.openURL('https://keepandroidopen.org')">keepandroidopen.org</span>
+                    <span style="color:#444;padding:0 5px;">|</span>
+                    <span style="color:#007aff;text-decoration:underline;cursor:pointer;font-weight:bold;display:inline-block;padding:5px;" onclick="plus.runtime.openURL('https://github.com/woheller69/FreeDroidWarn')">FreeDroidWarn 项目</span>
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="js/main.js"></script>
+</body>
+</html>
