@@ -17,6 +17,6 @@
 
 ## 使用方式
 
-下载项目内的 `e-pass-card.apk` 安装即可体验。
+下载项目内的 `e-pass-card.apk` （安装包已经放release里面了）安装即可体验。
 
 Design BY R4ksh4
